@@ -2,15 +2,15 @@ import cvxpy as cp
 import numpy as np
 import cvxpy.atoms.affine as af
 '''
-Initialisation Of Variables
+Initialization Of Variables
 '''
 e_nodes = 3
-f = 2
+f = 1
 '''
-Initialisation Of Matrices
+Initialization Of Matrices
 '''
 # popularity matrix
-p_matrix = np.array([0.5,0.5])
+p_matrix = np.array([1])
 p_matrix = p_matrix.reshape((1,f))
 # request matrix
 request = np.array([100,50,20])
@@ -28,7 +28,7 @@ band_e_v = band_e_v.reshape(e_nodes,1)
 band_e_e = np.array([25,50,40])
 band_e_e = band_e_e.reshape(e_nodes,1)
 # file size of each content(MB)
-size_matrix = np.array([100,100])
+size_matrix = np.array([100])
 size_matrix = size_matrix.reshape(1,f)
 print("file size matrix is",size_matrix)
 # Transmission Delay between edge node and vehicle
@@ -40,7 +40,9 @@ for c in range(0,f):
         t_list.append(time_req)
     temp_list.append(t_list)
 
-tr_e_v = np.array(temp_list)
+
+# tr_e_v = np.array(temp_list)
+tr_e_v = np.array([20,30,40])
 tr_e_v = tr_e_v.reshape(e_nodes,f)
 print("edge to vehicles shape is",tr_e_v.shape)
 print("edge to vehicle",tr_e_v)
@@ -53,7 +55,8 @@ for c in range(0,f):
         t_list.append(time_req)
     
     temp_list.append(t_list)
-tr_e_e = np.array(temp_list)
+# tr_e_e = np.array(temp_list)
+tr_e_e = np.array([2,9,5])
 tr_e_e = tr_e_e.reshape(e_nodes,f)
 print("edge to edge shape is",tr_e_e.shape)
 print("edge to edge",tr_e_e)
@@ -82,17 +85,18 @@ c_time = np.array([300,300,294.11])
 c_time = c_time.reshape(e_nodes,1)
 print("coverage area time is",c_time)
 # Add Maximum Size of each node constraint -> Mb
-max_size = np.array([300,200,400])
+max_size = np.array([50,200,400])
 max_size = max_size.reshape((1,e_nodes))
 # Construct Minimum Data Node can serve
-min_data_served = np.zeros((e_nodes,1))
-for i in range(0,e_nodes):
-    # Assume each vehicle velocity is 17m/sec
-    min_data = band_e_v[i][0]/((jam_density[i][0]/1000)*(17))
-    min_data_served[i][0]= min_data
+# min_data_served = np.zeros((e_nodes,1))
+# for i in range(0,e_nodes):
+#     # Assume each vehicle velocity is 17m/sec
+#     min_data = band_e_v[i][0]/((jam_density[i][0]/1000)*(17))
+#     min_data_served[i][0]= min_data
 
+min_data_served = np.array([100,200,50])
 min_data_served = min_data_served.reshape((1,e_nodes))
-
+print("min_data_served is",min_data_served)
 '''
 Construction Of Optimization Problem
 '''
@@ -150,8 +154,8 @@ for c in range(0,f):
     
     temp_var2 = X[c]
     temp_var2 = cp.reshape(temp_var2, (1,e_nodes))
-    epxr7 = temp_var2 @ e_e_matrix
-    expr8 = expr6 + epxr7
+    expr7 = temp_var2 @ e_e_matrix
+    expr8 = expr6 + expr7
     expr8 = cp.reshape(expr8,(e_nodes,1))
     constraint = expr8 <= c_time
     constraints.append(constraint)
@@ -159,8 +163,22 @@ for c in range(0,f):
 # Add Maximum Size Constraint
 constraint = size_matrix @ X <= max_size
 constraints.append(constraint)
-# Add Bandwidth Constraint
-constraint = size_matrix @ X <= min_data_served
+# Add Bandwidth Constraint for every edge node
+tr_x = X.T
+# preparing new size matrix
+new_size = np.zeros((f,f))
+for c in range(0,f):
+    new_size[c][c] = size_matrix[0][c]
+
+print("new size matrix is",new_size)
+for e in range(0,e_nodes):
+    # extract the left matrix
+    left_matrix = tr_x[e]
+    # extract right scalar value
+    min_data_size = min_data_served[0][e]
+    # initialize constraint
+    constraint = left_matrix @ new_size <= min_data_size
+    constraints.append(constraint)
 # checking for dcp
 objective_function = cp.Minimize(o_func)
 print("objective_function is dcp or not",objective_function.is_dcp())
@@ -177,32 +195,3 @@ print("A solution x is")
 print(X.value)
 print("A dual solution is")
 print(prob.constraints[0].dual_value)
-
-
-    
-
-
-
-
-
-
-
-
-    
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
