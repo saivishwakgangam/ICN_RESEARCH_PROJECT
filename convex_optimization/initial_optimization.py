@@ -25,6 +25,9 @@ d_tr_e_e = d_tr_e_e.reshape(e_nodes,1)
 sum = 0
 for index in range(0,e_nodes):
     sum = sum + d_tr_e_v[index][0]
+'''
+
+'''
 
 t_delay_list = list()
 for index in range(0,e_nodes):

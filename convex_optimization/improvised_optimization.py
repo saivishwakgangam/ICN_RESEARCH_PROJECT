@@ -4,6 +4,7 @@ import cvxpy.atoms.affine as af
 '''
 Initialization Of Variables
 '''
+
 e_nodes = 3
 f = 1
 '''
