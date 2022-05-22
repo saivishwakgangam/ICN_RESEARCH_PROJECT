@@ -51,10 +51,18 @@ for i in range(0,edge_nodes):
         if i == j:
             G[i][j] = -1
 h = np.zeros(shape=(edge_nodes,1))
-for i in range(0,edge_nodes):
-    h[i][0] = 0.0000000000000001
 A = np.ones(shape=(1,edge_nodes))
 b = file_size
+'''
+Adding maximum cacheable size at each edge node constraint(MB)
+'''
+max_cache_size = np.array([20.0,30.0,50.0])
+max_cache_size = max_cache_size.reshape(edge_nodes,1)
+# add cache size to h
+h = np.concatenate((h,max_cache_size))
+# add necessary matrix to G
+id = np.identity(edge_nodes)
+G = np.concatenate((G,id))
 
 '''
 Performing Optimization
@@ -87,20 +95,15 @@ print("A dual solution corresponding to the inequality constraints is")
 print(prob.constraints[0].dual_value)
 
 # checking the sum of obtained X value
-temp_matrix = X.value
-rows = temp_matrix.shape[0]
-cols = temp_matrix.shape[1]
-val_sum = 0
+float_matrix = X.value
+rows = float_matrix.shape[0]
+cols = float_matrix.shape[1]
+int_matrix = np.zeros(shape=(rows,cols))
 for i in range(0,rows):
     for j in range(0,cols):
-        if temp_matrix[i][j]<0:
-            print("value is less than zero",i,j)
-            print(temp_matrix[i][j])
-        val_sum = val_sum + temp_matrix[i][j]
-
-print(val_sum)
+        val = float_matrix[i][j]
+        int_value = int(val)+(1 if (val - int(val)) >0.9 else 0)
+        int_matrix[i][j] = int_value
 
 
-
-
-
+print("integer matrix is:",int_matrix)

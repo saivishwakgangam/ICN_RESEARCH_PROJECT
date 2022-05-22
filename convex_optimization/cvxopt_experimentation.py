@@ -6,7 +6,7 @@ variable initialization
 edge_nodes = 3
 files = 1
 # file size matrix(Assume 100MB)
-file_size = np.array([50.0])
+file_size = np.array([50.0],dtype=float)
 file_size= file_size.reshape(1,files)
 # Length Matrix(km)
 coverage_length = np.array([1,2,5])
@@ -42,15 +42,23 @@ for i in range(0,edge_nodes):
 
 P = 2*P
 print("matrix p is:",P)
-q = np.zeros(shape=(edge_nodes,1))
+q = np.zeros(shape=(edge_nodes,1),dtype=float)
 # Preparing Constraint Matrices
-G = np.identity(edge_nodes)
+G = np.identity(edge_nodes,dtype=float)
 for i in range(0,edge_nodes):
     for j in range(0,edge_nodes):
         if i == j:
-            G[i][j] = -1
-h = np.zeros(shape=(edge_nodes,1))
-for i in range(0,edge_nodes):
-    h[i][0] = 0.0000000000000001
-A = np.ones(shape=(1,edge_nodes))
+            G[i][j] = -1.0
+h = np.zeros(shape=(edge_nodes,1),dtype=float)
+A = np.ones(shape=(1,edge_nodes),dtype=float)
 b = file_size
+P = matrix(P)
+print(type(P))
+q = matrix(q)
+G = matrix(G)
+h = matrix(h)
+A = matrix(A)
+b = matrix(b)
+sol=solvers.qp(P, q, G, h, A, b)
+print(sol['x'])
+
