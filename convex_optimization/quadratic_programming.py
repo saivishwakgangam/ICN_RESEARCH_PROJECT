@@ -6,7 +6,7 @@ variable initialization
 '''
 edge_nodes = 3
 files = 1
-# file size matrix(Assume 100MB)
+# file size matrix(Assume 50MB)
 file_size = np.array([50.0])
 file_size= file_size.reshape(1,files)
 # Length Matrix(km)
@@ -63,6 +63,21 @@ h = np.concatenate((h,max_cache_size))
 # add necessary matrix to G
 id = np.identity(edge_nodes)
 G = np.concatenate((G,id))
+
+'''
+Adding Bandwidth(Minimum Data a node can serve) Constraints
+'''
+# Construct Minimum Data Node can serve
+min_data_served = np.zeros((e_nodes,1))
+for i in range(0,e_nodes):
+    # Assume each vehicle velocity is 17m/sec
+    min_data = band_e_v[i][0]/((jam_density[i][0]/1000)*(17))
+    min_data_served[i][0]= min_data
+
+
+
+
+
 
 '''
 Performing Optimization

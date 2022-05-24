@@ -1,62 +1,93 @@
 import cvxpy as cp
 import numpy as np
+
 '''
-Initilization
+Variables Initialization
 '''
-edge_nodes = 3
-files = 1
-# considering popularity of files
-f_pop = np.array([1])
-f_pop = f_pop.reshape(1,files)
-# size of file matrix(MB)
-matrix_size = np.array([500])
-matrix_size = matrix_size.reshape(files,1)
-# edge to edge transmission delay
-tr_e_e = np.array([2,3,4])
-tr_e_e = tr_e_e.reshape(edge_nodes,1)
-# prepare total delay matrix
-sum_list = list()
-for c in range(0,files):
-    sum = 0
-    for i in range(0,edge_nodes):
-        sum = sum + tr_e_v[i][c]
-    sum_list.append(sum)
+e_nodes = 3
+files = 3
 
-total_delay = np.zeros((edge_nodes,files))
-for c in range(0,files):
-    for i in range(0,edge_nodes):
-        temp_val = sum_list[c]-tr_e_v[i][c]
-        temp_val = temp_val + (edge_nodes - 1) * tr_e_e[i][c]
-        total_delay[i][c] = temp_val
+'''
+Assume edge nodes are in a straight line (e1-----e2------e3)
+Assume equal share of bandwidth between all vehicles in an edge node
+Assume 
+'''
 
-print("total delay is",total_delay)
-# initializing ones matrix
-one_matrix = np.ones(shape=(edge_nodes,1)) 
-# optimization function
-X = cp.Variable(shape=(files,edge_nodes))
-print("shape of cp variable is",X.shape)
-expr1 = X @ tr_e_v
-expr2 = X @ total_delay
-o_func = f_pop @ (expr1 + expr2)
-print("shape of min_function",o_func.shape)
-# Adding sum of file segments should be total size
-constraints = list()
-constraint1 = X @ one_matrix == matrix_size
-constraints.append(constraint1)
-# constraint on value of matrix
-constraint2 = X >= 0
-constraints.append(constraint2)
-# Adding Mobility and Bandwidth Constraint
+# popularity matrix
+p_matrix = np.array([0.2,0.5,0.3])
+p_matrix = p_matrix.reshape((1,files))
 
-# checking whether dcp or not
-objective_function = cp.Minimize(o_func)
-print("objective_function is dcp or not",objective_function.is_dcp())
-for c in constraints:
+# Length Matrix(km)
+coverage_length = np.array([1,2,4])
+coverage_length = coverage_length.reshape(e_nodes,1)
+
+# jam density matrix(vehicles per km)
+jam_density = np.array([20,20,18])
+jam_density = jam_density.reshape(e_nodes,1)
+
+# bandwidth(Mbps) between edge node and vehicles
+band_e_v = np.array([100,200,50])
+band_e_v = band_e_v.reshape(e_nodes,1)
+
+# bandwidth(Mbps) between edge nodes -> shape(edge_nodes,edge_nodes)
+band_e_e = np.array([[0,50,70],[50,0,100],[40,60,0]])
+print("band_e_e shape is:",band_e_e.shape)
+print("band_e_e is ",band_e_e)
+
+# size matrix -> size of each file -> shape (files,1)
+size_matrix = np.array([300,400,200])
+size_matrix = size_matrix.reshape(files,1)
+
+# maximum size matrix -> maximum size at each node
+max_size_matrix = np.array([1200,1200,1100])
+max_size_matrix = max_size_matrix.reshape(1,e_nodes)
+
+
+# preparation of constant denominator
+val_sum = 0
+for e in range(0,e_nodes):
+    c_val = band_e_v[e][0]/(jam_density[e][0]*coverage_length[e][0])
+    val_sum = val_sum + (1/c_val)
+
+
+provide_delay = np.zeros(shape=(e_nodes,1))
+# accessing band_e_e matrix
+for i in range(0,e_nodes):
+    temp_sum = 0
+    for j in range(0,e_nodes):
+        if i != j:
+            temp_sum = temp_sum + (1/band_e_e[i][j])
+    
+    provide_delay[i][0] = val_sum+temp_sum
+
+
+'''
+Performing Optimization
+'''
+X = cp.Variable(shape=(files,e_nodes))
+obj_function = cp.Minimize(p_matrix@(X@provide_delay))
+
+# Constraints 
+constraint_list = list()
+
+# Sum constraint
+one_matrix = np.ones(shape=(e_nodes,1))
+constraint1 = X @ one_matrix == size_matrix  
+constraint_list.append(constraint1)
+
+# Maximum Cacheable Size Node constraint
+temp_ones = np.ones(shape=(1,files))
+constraint2 = temp_ones @ X == max_size_matrix
+constraint_list.append(constraint2)
+
+# perform optimization
+print("objective_function is dcp or not",obj_function.is_dcp())
+for c in constraint_list:
     print("constraint dcp or not",c.is_dcp())
 
-# solve the problem
-prob = cp.Problem(objective_function,constraints)
-prob.solve(solver=cp.GUROBI)
+# optimization problem
+prob = cp.Problem(obj_function,constraint_list)
+prob.solve()
 
 # Print Result
 print("\nThe optimal value is", prob.value)
@@ -66,3 +97,4 @@ print("A dual solution is")
 print(prob.constraints[0].dual_value)
 
 
+   
